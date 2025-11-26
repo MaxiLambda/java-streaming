@@ -4,7 +4,6 @@ import static lincks.maximilian.streaming.Sinks.list;
 import static lincks.maximilian.streaming.Stages.*;
 
 import lincks.maximilian.streaming.Source;
-import lincks.maximilian.streaming.Sources;
 import lincks.maximilian.streaming.Stage;
 
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
@@ -15,8 +14,8 @@ public class Main {
     Stage<Integer, Source<Integer>> slidingWindow = slidingWindow(4);
 
     var res =
-        Sources.of(1, 2, 3)
-            .then(flatMap(i -> Sources.of(i, i + 1)))
+        Source.of(1, 2, 3)
+            .then(flatMap(i -> Source.of(i, i + 1)))
             .then(slidingWindow(4))
             .then(list())
             .reduce(list());

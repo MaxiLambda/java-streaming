@@ -1,8 +1,10 @@
 package lincks.maximilian.streaming;
 
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
-public interface Source<T> {
+public interface Source<T> extends Iterable<T> {
   Optional<T> pull();
 
   default Source<T> concat(Source<T> other) {
@@ -22,5 +24,69 @@ public interface Source<T> {
 
   default <RR> RR reduce(Sink<T, RR> sink) {
     return sink.collect(this);
+  }
+
+  static <T> Source<T> empty() {
+    return Optional::empty;
+  }
+
+  static <T> Source<T> of(T... elements) {
+    return fromIterable(Arrays.asList(elements));
+  }
+
+  static <T> Source<T> fromIterable(Iterable<T> iterable) {
+    return fromIterator(iterable.iterator());
+  }
+
+  static <T> Source<T> fromIterator(Iterator<T> iterator) {
+    return () -> {
+      if (iterator.hasNext()) {
+        return Optional.of(iterator.next());
+      } else {
+        return Optional.empty();
+      }
+    };
+  }
+
+  default Stream<T> toStream() {
+    return StreamSupport.stream(
+        Spliterators.spliteratorUnknownSize(new IteratorSource<>(this), Spliterator.ORDERED),
+        false);
+  }
+
+  @Override
+  default Iterator<T> iterator() {
+    return new IteratorSource<>(this);
+  }
+
+  class IteratorSource<T> implements Iterator<T> {
+
+    private final Source<T> source;
+    private Optional<T> bufferedValue = Optional.empty();
+
+    public IteratorSource(Source<T> source) {
+      this.source = source;
+    }
+
+    @Override
+    public boolean hasNext() {
+      if (bufferedValue.isPresent()) return true;
+      bufferedValue = source.pull();
+      return bufferedValue.isPresent();
+    }
+
+    @Override
+    public T next() {
+      if (hasNext()) {
+        try {
+          // hasNext() always pulls the next value
+          // it can only return true if bufferedValue.isPresent() is true
+          return bufferedValue.get();
+        } finally {
+          bufferedValue = Optional.empty();
+        }
+      }
+      throw new NoSuchElementException();
+    }
   }
 }

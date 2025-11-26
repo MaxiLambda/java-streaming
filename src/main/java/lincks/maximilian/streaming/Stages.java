@@ -1,6 +1,6 @@
 package lincks.maximilian.streaming;
 
-import static lincks.maximilian.streaming.Sources.fromIterable;
+import static lincks.maximilian.streaming.Source.fromIterable;
 
 import java.util.*;
 import java.util.function.Function;
@@ -96,7 +96,7 @@ public interface Stages {
               queue.addLast(token.get());
             }
           }
-          //create a copy of the queue in a collection because the queue is mutated
+          // create a copy of the queue in a collection because the queue is mutated
           var ret = fromIterable(new ArrayList<>(queue));
           queue.removeFirst();
           return Optional.of(ret);
