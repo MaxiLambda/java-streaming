@@ -3,7 +3,7 @@ package lincks.maximilian.streaming;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-import static lincks.maximilian.streaming.Sources.sourceCollector;
+import static lincks.maximilian.streaming.Sources.toSourceCollector;
 
 /** Sinks are usually terminal operations, but they can be used as stages on nested sources. */
 public interface Sink<T, R> extends Stage<Source<T>, R> {
@@ -19,7 +19,8 @@ public interface Sink<T, R> extends Stage<Source<T>, R> {
 
   default Collector<T, ?, R> toCollector() {
     return Collectors.collectingAndThen(
-            sourceCollector(),
+            toSourceCollector(),
             this::collect);
   }
+
 }

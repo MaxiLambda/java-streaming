@@ -1,6 +1,6 @@
 package lincks.maximilian;
 
-import static lincks.maximilian.streaming.Sinks.list;
+import static lincks.maximilian.streaming.Sinks.toList;
 import static lincks.maximilian.streaming.Stages.*;
 
 import lincks.maximilian.streaming.Source;
@@ -17,8 +17,8 @@ public class Main {
         Source.of(1, 2, 3)
             .then(flatMap(i -> Source.of(i, i + 1)))
             .then(slidingWindow(4))
-            .then(list())
-            .reduce(list());
+            .then(toList())
+            .reduce(toList());
 
     System.out.println(res);
   }
