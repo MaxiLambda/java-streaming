@@ -1,4 +1,4 @@
-package lincks.maximilian.streaming;
+package lincks.maximilian.streaming.sink;
 
 import static lincks.maximilian.util.Util.fluent;
 

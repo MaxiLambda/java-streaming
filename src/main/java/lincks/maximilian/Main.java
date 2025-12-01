@@ -1,11 +1,11 @@
 package lincks.maximilian;
 
-import static lincks.maximilian.streaming.Sinks.toList;
-import static lincks.maximilian.streaming.Stages.*;
+import static lincks.maximilian.streaming.sink.Sinks.toList;
+import static lincks.maximilian.streaming.stage.Stages.*;
 
-import lincks.maximilian.streaming.Source;
-import lincks.maximilian.streaming.Stage;
-import lincks.maximilian.streaming.Stages;
+import lincks.maximilian.streaming.source.Source;
+import lincks.maximilian.streaming.stage.Stage;
+import lincks.maximilian.streaming.stage.Stages;
 
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.

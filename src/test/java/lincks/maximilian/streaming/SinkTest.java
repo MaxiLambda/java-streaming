@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
 import java.util.stream.Stream;
+
+import lincks.maximilian.streaming.sink.Sinks;
 import org.junit.jupiter.api.Test;
 
 class SinkTest {

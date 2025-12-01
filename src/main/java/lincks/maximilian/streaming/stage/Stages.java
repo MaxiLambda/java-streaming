@@ -1,6 +1,8 @@
-package lincks.maximilian.streaming;
+package lincks.maximilian.streaming.stage;
 
-import static lincks.maximilian.streaming.Source.fromIterable;
+import lincks.maximilian.streaming.source.Source;
+
+import static lincks.maximilian.streaming.source.Source.fromIterable;
 
 import java.util.*;
 import java.util.function.BiConsumer;

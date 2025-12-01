@@ -1,4 +1,4 @@
-package lincks.maximilian.streaming;
+package lincks.maximilian.streaming.source;
 
 import static java.util.stream.Collectors.toList;
 

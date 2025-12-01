@@ -1,10 +1,13 @@
 package lincks.maximilian.streaming;
 
-import static lincks.maximilian.streaming.Stages.map;
+import static lincks.maximilian.streaming.stage.Stages.map;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
 import java.util.stream.Stream;
+
+import lincks.maximilian.streaming.stage.Stage;
+import lincks.maximilian.streaming.stage.Stages;
 import org.junit.jupiter.api.Test;
 
 class StageTest {
