@@ -1,4 +1,4 @@
-package lincks.maximilian.streaming;
+package lincks.maximilian.streaming.stage;
 
 import static lincks.maximilian.streaming.stage.Stages.map;
 import static org.junit.jupiter.api.Assertions.*;
@@ -6,11 +6,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import java.util.stream.Stream;
 
-import lincks.maximilian.streaming.stage.Stage;
-import lincks.maximilian.streaming.stage.Stages;
 import org.junit.jupiter.api.Test;
 
-class StageTest {
+class StagesTest {
   @Test
   void mapGatherer() {
     Stage<Integer, Integer> stage = map(i -> i + 1);

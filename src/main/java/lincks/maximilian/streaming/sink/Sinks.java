@@ -11,26 +11,12 @@ import java.util.function.Supplier;
 public interface Sinks {
 
   static <T> Sink<T, List<T>> toList() {
-    return foldl(new ArrayList<>(), fluent(List::add));
+    return foldl(ArrayList::new, fluent(List::add));
   }
 //  TODO
 //  static <T,K,V> Sink<T, Map<K,V>> toMap() {
 //
 //  }
-
-  static <T, R> Sink<T, R> foldl(R identity, BiFunction<R, T, R> accumulator) {
-    return (source) -> {
-      R acc = identity;
-      while (true) {
-        Optional<T> token = source.pull();
-        if (token.isEmpty()) {
-          return acc;
-        } else {
-          acc = accumulator.apply(acc, token.get());
-        }
-      }
-    };
-  }
 
   static <T, R> Sink<T, R> foldl(Supplier<R> identity, BiFunction<R, T, R> accumulator) {
     return (source) -> {

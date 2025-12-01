@@ -1,15 +1,12 @@
-package lincks.maximilian.streaming;
+package lincks.maximilian.streaming.source;
 
-import static lincks.maximilian.streaming.stage.Stages.map;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.NoSuchElementException;
-
-import lincks.maximilian.streaming.source.IteratorSource;
-import lincks.maximilian.streaming.source.Source;
 import org.junit.jupiter.api.Test;
 
-class SourceTest {
+public class IteratorSourceTest {
 
   @Test
   void iteratorSource() {
@@ -22,13 +19,5 @@ class SourceTest {
     assertEquals(2, iteratorSource.next());
     assertFalse(iteratorSource.hasNext());
     assertThrows(NoSuchElementException.class, iteratorSource::next);
-  }
-
-  @Test
-  void stream() {
-    var list = Source.of(1, 2).then(map(i -> i + 1)).toStream().toList();
-
-    assertTrue(list.contains(2));
-    assertTrue(list.contains(3));
   }
 }
