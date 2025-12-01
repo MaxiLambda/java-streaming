@@ -1,4 +1,4 @@
-package lincks.maximilian.streaming;
+package lincks.maximilian.util;
 
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;

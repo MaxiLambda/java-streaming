@@ -1,10 +1,9 @@
 package lincks.maximilian.streaming;
 
-import static lincks.maximilian.streaming.Util.fluent;
+import static lincks.maximilian.util.Util.fluent;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;

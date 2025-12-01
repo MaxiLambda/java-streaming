@@ -3,7 +3,11 @@ package lincks.maximilian.streaming;
 import static lincks.maximilian.streaming.Source.fromIterable;
 
 import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Gatherer;
 
 public interface Stages {
   static <T> Stage<T, T> identity() {
@@ -102,4 +106,71 @@ public interface Stages {
           return Optional.of(ret);
         };
   }
+    static <T, A, R> Stage<T, R> fromGatherer(Gatherer<T, A, R> gatherer) {
+        Gatherer.Integrator<A, T, R> integrator = gatherer.integrator();
+        Supplier<A> initializer = gatherer.initializer();
+        BiConsumer<A, Gatherer.Downstream<? super R>> finisher = gatherer.finisher();
+
+        // array buffer to act as downstream
+        ArrayList<R> listBuffer = new ArrayList<>();
+
+        Supplier<Optional<Source<R>>> createOptionalAndClearBuffer =
+                () -> {
+                    try {
+                        // we need to wrap the buffer in a new List to prevent issues on mutations
+                        return Optional.of(Source.fromIterable(new ArrayList<>(listBuffer)));
+                    } finally {
+                        listBuffer.clear();
+                    }
+                };
+
+        Stage<T, Source<R>> intermediate =
+                (source ->
+                        () -> {
+                            // don't call get() if the initializer is the default value
+                            A state =
+                                    Gatherer.defaultInitializer().equals(initializer) ? null : initializer.get();
+                            // listBuffer only contains values if the finisher called downstream.push(...)
+                            while (listBuffer.isEmpty()) {
+                                Optional<T> token = source.pull();
+                                if (token.isEmpty()) {
+                                    // check if a finisher exists
+                                    if (Gatherer.defaultFinisher().equals(finisher)) {
+                                        // no finisher, nothing to push downstream
+                                        return Optional.empty();
+                                    } else {
+                                        finisher.accept(state, listBuffer::add);
+                                        // the finisher can call downstream.push(...), therefore check if new elements
+                                        // exist
+                                        return listBuffer.isEmpty()
+                                                ? Optional.empty()
+                                                : createOptionalAndClearBuffer.get();
+                                    }
+                                }
+                                integrator.integrate(state, token.get(), listBuffer::add);
+                            }
+                            return createOptionalAndClearBuffer.get();
+                        });
+
+        return intermediate.then(buffer());
+    }
+
+    record State<A, R>(A acc, Optional<R> result) {}
+
+    static <T, A, R> Stage<T, R> integrate(
+            Supplier<A> initializer, BiFunction<T, A, State<A, R>> accumulator) {
+        return source ->
+                () -> {
+                    State<A, R> state = new State<>(initializer.get(), Optional.empty());
+                    while (state.result.isEmpty()) {
+                        Optional<T> token = source.pull();
+                        if (token.isEmpty()) {
+                            // state contains no valid result, but there is no data
+                            return Optional.empty();
+                        }
+                        state = accumulator.apply(token.get(), state.acc);
+                    }
+                    return state.result;
+                };
+    }
 }

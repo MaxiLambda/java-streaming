@@ -16,7 +16,7 @@ public interface Stage<T, R> {
     return (source) -> this.setup(source).reduce(sink);
   }
 
-  default Gatherer<T, ?, R> terminalGatherer() {
+  default Gatherer<T, ?, R> toTerminalGatherer() {
     // use a fold to gather all elements in a list
     return Gatherers.<T, List<T>>fold(
             ArrayList::new,
