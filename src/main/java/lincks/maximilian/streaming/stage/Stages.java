@@ -1,6 +1,6 @@
 package lincks.maximilian.streaming.stage;
 
-import static lincks.maximilian.streaming.source.Source.fromIterable;
+import static lincks.maximilian.streaming.source.Sources.fromIterable;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -148,7 +148,7 @@ public interface Stages {
         () -> {
           try {
             // we need to wrap the buffer in a new List to prevent issues on mutations
-            return Optional.of(Source.fromIterable(new ArrayList<>(listBuffer)));
+            return Optional.of(fromIterable(new ArrayList<>(listBuffer)));
           } finally {
             listBuffer.clear();
           }

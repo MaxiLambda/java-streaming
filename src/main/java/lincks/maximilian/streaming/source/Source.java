@@ -7,6 +7,8 @@ import java.util.*;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static lincks.maximilian.streaming.source.Sources.fromIterable;
+
 /**
  * Sources supply {@link Stage}s and {@link Sink}s with values. Sources are stateful and not
  * reusable. DO NOT USE A SOURCE AFTER CALLING ANY METHOD ON IT.
@@ -57,22 +59,6 @@ public interface Source<T> extends Iterable<T> {
   /** Creates a new Source based on the given elements. */
   static <T> Source<T> of(T... elements) {
     return fromIterable(Arrays.asList(elements));
-  }
-
-  /** Creates a new Source based on the given Iterable. */
-  static <T> Source<T> fromIterable(Iterable<T> iterable) {
-    return fromIterator(iterable.iterator());
-  }
-
-  /** Creates a new Source based on the given Iterator. */
-  static <T> Source<T> fromIterator(Iterator<T> iterator) {
-    return () -> {
-      if (iterator.hasNext()) {
-        return Optional.of(iterator.next());
-      } else {
-        return Optional.empty();
-      }
-    };
   }
 
   /** Converts this Source into a sequential ordered {@link Stream}. */

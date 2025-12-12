@@ -1,13 +1,23 @@
 package lincks.maximilian.streaming.source;
 
-import static java.util.stream.Collectors.toList;
-
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
+import java.util.Iterator;
+import java.util.Optional;
 
 public interface Sources {
 
-  static <T> Collector<T, ?, Source<T>> toSourceCollector() {
-    return Collectors.collectingAndThen(toList(), Source::fromIterable);
+  /** Creates a new Source based on the given Iterable. */
+  static <T> Source<T> fromIterable(Iterable<T> iterable) {
+    return fromIterator(iterable.iterator());
+  }
+
+  /** Creates a new Source based on the given Iterator. */
+  static <T> Source<T> fromIterator(Iterator<T> iterator) {
+    return () -> {
+      if (iterator.hasNext()) {
+        return Optional.of(iterator.next());
+      } else {
+        return Optional.empty();
+      }
+    };
   }
 }

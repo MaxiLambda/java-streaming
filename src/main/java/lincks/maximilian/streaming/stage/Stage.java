@@ -6,6 +6,7 @@ import java.util.stream.Gatherer;
 import java.util.stream.Gatherers;
 import lincks.maximilian.streaming.sink.Sink;
 import lincks.maximilian.streaming.source.Source;
+import lincks.maximilian.streaming.source.Sources;
 
 public interface Stage<T, R> {
 
@@ -45,7 +46,7 @@ public interface Stage<T, R> {
             Gatherer.ofSequential(
                 (_, list, downstream) -> {
                   //                  turn the list into a source and feed it to this stage
-                  setup(Source.fromIterable(list))
+                  setup(Sources.fromIterable(list))
                       // push all values created by this stage downstream
                       .forEach(downstream::push);
                   return false;
