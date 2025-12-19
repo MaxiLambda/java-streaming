@@ -5,12 +5,10 @@ import static lincks.maximilian.streaming.stage.Stages.mapInner;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
-import java.util.stream.Stream;
 import lincks.maximilian.streaming.source.Source;
 import org.junit.jupiter.api.Test;
 
 class SinkTest {
-
 
   @Test
   void useAsStage() {
