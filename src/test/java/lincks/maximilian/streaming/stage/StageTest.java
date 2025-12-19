@@ -26,7 +26,9 @@ class StageTest {
   @Test
   void toGatherer3() {
     var res =
-        Stream.of(1, 2, 3).gather(slidingWindow(2).then(toList()).toTerminalGatherer()).toList();
+        Stream.of(1, 2, 3)
+            .gather(slidingWindow(2).then(mapInner(toList())).toTerminalGatherer())
+            .toList();
 
     assertEquals(List.of(List.of(1, 2), List.of(2, 3)), res);
   }

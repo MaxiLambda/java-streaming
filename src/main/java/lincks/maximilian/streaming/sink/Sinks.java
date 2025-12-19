@@ -45,17 +45,9 @@ public interface Sinks {
   }
 
   static <T> Sink<T, Optional<T>> foldl(BiFunction<T, T, T> accumulator) {
-    return (source) -> {
-      Optional<T> acc = Optional.empty();
-      while (true) {
-        Optional<T> token = source.pull();
-        if (token.isEmpty()) {
-          return acc;
-        } else {
-          acc = acc.flatMap(a -> token.map(t -> accumulator.apply(a, t)));
-        }
-      }
-    };
+    return (source) ->
+        foldl(source::pull, (Optional<T> acc, T val) -> acc.map(a -> accumulator.apply(a, val)))
+            .collect(source);
   }
 
   // foldl' :: (a -> b -> a) -> a -> [b] -> a
@@ -75,7 +67,7 @@ public interface Sinks {
         if (token.isEmpty()) {
           return acc.apply(identity.get());
         } else {
-          acc =  acc.compose((R val) -> accumulator.apply(token.get(), val));
+          acc = acc.compose((R val) -> accumulator.apply(token.get(), val));
         }
       }
     };

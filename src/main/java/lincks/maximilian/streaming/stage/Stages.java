@@ -6,6 +6,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.*;
 import java.util.stream.Gatherer;
+import lincks.maximilian.streaming.sink.Sink;
 import lincks.maximilian.streaming.source.Source;
 
 public interface Stages {
@@ -91,6 +92,10 @@ public interface Stages {
             }
           }
         };
+  }
+
+  static <T,R> Stage<Source<T>, R> mapInner(Sink<T,R> sink) {
+      return (source) -> () -> source.pull().map(s -> s.reduce(sink));
   }
 
   /**
