@@ -2,11 +2,10 @@ package lincks.maximilian.streaming.stage;
 
 import static lincks.maximilian.streaming.source.Sources.fromIterable;
 import static lincks.maximilian.util.Util.fluent;
+import static lincks.maximilian.util.Util.ignore;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.*;
-import java.util.stream.Gatherer;
 import lincks.maximilian.streaming.sink.Sink;
 import lincks.maximilian.streaming.source.Source;
 import lincks.maximilian.util.Mutable;
@@ -97,6 +96,8 @@ public interface Stages {
   }
 
   static <T, R> Stage<Source<T>, R> mapInner(Sink<T, R> sink) {
+    // equivalent implementations
+//     return integrate(ignore(), (val, _) -> State.of(val.reduce(sink)));
     return (source) -> () -> source.pull().map(s -> s.reduce(sink));
   }
 
@@ -104,23 +105,26 @@ public interface Stages {
    * Split the Source into sequences of length size. If not enough values are present, the last
    * group may be smaller than size.
    */
-  static <T> Stage<T, List<T>> groupsOf(int size) {
-    return (source) ->
-        () -> {
-          ArrayList<T> list = new ArrayList<>();
-          while (list.size() < size) {
-            Optional<T> token = source.pull();
-            if (token.isEmpty()) {
-              if (list.isEmpty()) {
-                return Optional.empty();
-              }
-              return Optional.of(list);
-            } else {
-              list.add(token.get());
-            }
-          }
-          return Optional.of(list);
-        };
+  static <T> Stage<T, Source<T>> groupsOf(int size) {
+    return Stages.integrate(
+        ArrayList<T>::new,
+        (val, acc) -> {
+          acc.add(val);
+          if (acc.size() < size) return new State<>(acc, Optional.empty());
+          return new State<>(new ArrayList<>(), Optional.of(fromIterable(acc)));
+        },
+        acc -> acc.isEmpty() ? Optional.empty() : Optional.of(fromIterable(acc)));
+  }
+
+  static <T> Stage<T, Source<T>> groupsOfExact(int size) {
+    return Stages.integrate(
+        ArrayList<T>::new,
+        (val, acc) -> {
+          acc.add(val);
+          if (acc.size() < size) return new State<>(acc, Optional.empty());
+          var ret = Optional.of(fromIterable(new ArrayList<>(acc)));
+          return new State<>(new ArrayList<>(), ret);
+        });
   }
 
   static <T> Stage<T, Source<T>> slidingWindow(int size) {
@@ -135,21 +139,53 @@ public interface Stages {
         });
   }
 
-  record State<A, R>(A acc, Optional<R> result) {}
+  record State<A, R>(A acc, Optional<R> result) {
+    static <R> State<Void, R> of(R result) {
+      return new State<>(null, Optional.of(result));
+    }
+  }
 
   static <T, A, R> Stage<T, R> integrate(
       Supplier<A> initializer, BiFunction<T, A, State<A, R>> accumulator) {
+    return integrate(initializer, accumulator, _ -> Optional.empty());
+  }
+
+  /* Offers a functional way to write Stages.
+   * The initializer is used to provide the initial value of the accumulator.
+   * The accumulator function is used to combine the state from possibly many values from upstream.
+   * The finisher runs on the last State of the accumulator when upstream runs try. The finisher may or may not return an additional value.
+   *  */
+  static <T, A, R> Stage<T, R> integrate(
+      Supplier<A> initializer,
+      BiFunction<T, A, State<A, R>> accumulator,
+      Function<A, Optional<R>> finisher) {
+    // Mutable's are required because references are not allowed to change inside lambdas
     Mutable<State<A, R>> state = new Mutable<>(new State<>(initializer.get(), Optional.empty()));
+    Mutable<Boolean> finisherRan = new Mutable<>(false);
     return source ->
+        // pull method of the returned source
         () -> {
+          // when downstream pulls, it might be necessary to pull multiple times upstream to create
+          // a new value to push down.
+          // state is persisted in a State holding an accumulator A and a result
           while (state.get().result.isEmpty()) {
-            Optional<T> token = source.pull();
+            Optional<T> token = source.pull(); // pull from downstream
+            // check if downstream is empty
             if (token.isEmpty()) {
-              // state contains no valid result, but there is no data
+              // state contains no valid result
+              if (!finisherRan.get()) {
+                // A finisher can be used to turn the current state of the accumulator into another
+                // valid result. It is necessary to use a flag to ensure the finisher can only be
+                // used once.
+                finisherRan.set(true);
+                return finisher.apply(state.get().acc);
+              }
               return Optional.empty();
             }
+            // run the accumulator and update the current state
             state.set(accumulator.apply(token.get(), state.get().acc));
           }
+          // save the result before cleaning the State
           var res = state.get().result;
           // clean up the result to prevent loops
           state.set(new State<>(state.get().acc, Optional.empty()));

@@ -22,5 +22,7 @@ public interface Util {
     return t;
   }
 
-
+  static Supplier<Void> ignore()  {
+    return () -> null;
+  }
 }

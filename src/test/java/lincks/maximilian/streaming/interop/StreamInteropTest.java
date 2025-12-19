@@ -50,7 +50,9 @@ class StreamInteropTest {
   @Test
   void fromGatherer() {
     var res =
-        Source.of(1, 2, 3).then(StreamInterop.fromGatherer(Gatherers.windowSliding(2))).reduce(toList());
+        Source.of(1, 2, 3)
+            .then(StreamInterop.fromGatherer(Gatherers.windowSliding(2)))
+            .reduce(toList());
 
     assertEquals(List.of(List.of(1, 2), List.of(2, 3)), res);
   }
@@ -94,7 +96,7 @@ class StreamInteropTest {
 
   @Test
   void groupsOf2Gatherer() {
-    Stage<Integer, List<Integer>> stage = Stages.groupsOf(2);
+    Stage<Integer, List<Integer>> stage = $(Stages.groupsOf(2), mapInner(toList()));
     var list = Stream.of(1, 2, 3, 4).gather(toTerminalGatherer(stage)).toList();
     assertEquals(List.of(List.of(1, 2), List.of(3, 4)), list);
   }

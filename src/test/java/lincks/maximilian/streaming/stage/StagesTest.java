@@ -22,4 +22,19 @@ class StagesTest {
         Source.of(1, 2, 3).then($(Stages.slidingWindow(2), mapInner(toList()))).reduce(toList());
     System.out.println(res);
   }
+
+  @Test
+  void groupsOf() {
+    var res =
+            Source.of(1, 2, 3).then($(Stages.groupsOf(2), mapInner(toList()))).reduce(toList());
+    assertEquals(List.of(List.of(1, 2), List.of(3)), res);
+  }
+
+  @Test
+  void groupsOfExact() {
+    var res =
+            Source.of(1, 2, 3).then($(Stages.groupsOfExact(2), mapInner(toList()))).reduce(toList());
+
+    assertEquals(List.of(List.of(1, 2)), res);
+  }
 }
