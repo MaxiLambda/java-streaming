@@ -26,30 +26,4 @@ public interface Stage<T, R> {
    */
   default <RR> Sink<T, RR> reduce(Sink<R, RR> sink) {
     return (source) -> this.setup(source).reduce(sink);
-  }
-
-  /**
-   * Turns this Stage into a sequential {@link Gatherer}.
-   *
-   * @return Gatherer which reads the while Stream, turns it into a {@link Source}, processes all
-   *     values and finally pushes all new values downstream.
-   */
-  default Gatherer<T, ?, R> toTerminalGatherer() {
-    // use a fold to gather all elements in a list
-    return Gatherers.<T, List<T>>fold(
-            ArrayList::new,
-            (acc, val) -> {
-              acc.add(val);
-              return acc;
-            })
-        .andThen(
-            Gatherer.ofSequential(
-                (_, list, downstream) -> {
-                  //                  turn the list into a source and feed it to this stage
-                  setup(Sources.fromIterable(list))
-                      // push all values created by this stage downstream
-                      .forEach(downstream::push);
-                  return false;
-                }));
-  }
-}
+  }}

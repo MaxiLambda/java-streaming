@@ -1,13 +1,14 @@
 package lincks.maximilian.streaming.source;
 
-import lincks.maximilian.streaming.sink.Sink;
-import lincks.maximilian.streaming.stage.Stage;
+import static lincks.maximilian.streaming.source.Sources.fromIterable;
+import static lincks.maximilian.streaming.stage.Stages.$;
+import static lincks.maximilian.streaming.stage.Stages.buffer;
 
 import java.util.*;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import static lincks.maximilian.streaming.source.Sources.fromIterable;
+import lincks.maximilian.streaming.sink.Sink;
+import lincks.maximilian.streaming.stage.Stage;
 
 /**
  * Sources supply {@link Stage}s and {@link Sink}s with values. Sources are stateful and not
@@ -57,15 +58,9 @@ public interface Source<T> extends Iterable<T> {
   }
 
   /** Creates a new Source based on the given elements. */
+  @SafeVarargs
   static <T> Source<T> of(T... elements) {
     return fromIterable(Arrays.asList(elements));
-  }
-
-  /** Converts this Source into a sequential ordered {@link Stream}. */
-  default Stream<T> toStream() {
-    return StreamSupport.stream(
-        Spliterators.spliteratorUnknownSize(new IteratorSource<>(this), Spliterator.ORDERED),
-        false);
   }
 
   /**

@@ -11,11 +11,6 @@ import org.junit.jupiter.api.Test;
 
 class SinkTest {
 
-  @Test
-  void collector() {
-    var list = Stream.of(1, 2, 3).collect(toList().toCollector());
-    assertEquals(List.of(1, 2, 3), list);
-  }
 
   @Test
   void useAsStage() {

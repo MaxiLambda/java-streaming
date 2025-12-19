@@ -15,9 +15,4 @@ public interface Sink<T, R> {
 
   /** Drains a {@link Source} and reduces its content into a single value. */
   R collect(Source<T> source);
-
-  /** Creates a {@link Collector} from this Sink. */
-  default Collector<T, ?, R> toCollector() {
-    return Collectors.collectingAndThen(toSourceCollector(), this::collect);
-  }
 }

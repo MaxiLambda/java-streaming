@@ -3,6 +3,7 @@ package lincks.maximilian.streaming.sink;
 import static lincks.maximilian.util.Util.fluent;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -10,24 +11,28 @@ import java.util.function.Supplier;
 public interface Sinks {
 
   static <T> Sink<T, List<T>> toList() {
-    return foldl(ArrayList::new, fluent(List::add));
+    return intoMutable(ArrayList::new, List::add);
   }
 
   static <T, K, V> Sink<T, Map<K, V>> toMap(Function<T, K> keyMapper, Function<T, V> valueMapper) {
-    return foldl(
-        HashMap::new, fluent((map, t) -> map.put(keyMapper.apply(t), valueMapper.apply(t))));
+    return intoMutable(HashMap::new, (map, t) -> map.put(keyMapper.apply(t), valueMapper.apply(t)));
+  }
+
+  static <C, T> Sink<T, C> into(Supplier<C> createContainer, BiFunction<C, T, C> conj) {
+    return foldl(createContainer, conj);
+  }
+
+  static <C, T> Sink<T, C> intoMutable(Supplier<C> createContainer, BiConsumer<C, T> conj) {
+    return foldl(createContainer, fluent(conj));
   }
 
   static <T, K, V> Sink<T, Map<K, List<V>>> toMultiMap(
       Function<T, K> keyMapper, Function<T, V> valueMapper) {
-    return foldl(
+    return intoMutable(
         HashMap::new,
-        fluent(
-            (map, t) ->
-                map.merge(
-                    keyMapper.apply(t),
-                    valueMapper.andThen(List::of).apply(t),
-                    fluent(List::addAll))));
+        (map, t) ->
+            map.merge(
+                keyMapper.apply(t), valueMapper.andThen(List::of).apply(t), fluent(List::addAll)));
   }
 
   static <T, R> Sink<T, R> foldl(Supplier<R> identity, BiFunction<R, T, R> accumulator) {
@@ -71,5 +76,11 @@ public interface Sinks {
         }
       }
     };
+  }
+
+  static <T> Sink<T, Optional<T>> foldr(BiFunction<T, T, T> accumulator) {
+    return (source) ->
+        foldr(source::pull, (T val, Optional<T> acc) -> acc.map(a -> accumulator.apply(val, a)))
+            .collect(source);
   }
 }

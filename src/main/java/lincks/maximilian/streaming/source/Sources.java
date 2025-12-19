@@ -20,4 +20,8 @@ public interface Sources {
       }
     };
   }
+
+  static <T> Source<T> source(Source<T> source) {
+    return source;
+  }
 }
