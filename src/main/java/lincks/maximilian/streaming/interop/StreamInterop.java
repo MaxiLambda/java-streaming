@@ -10,9 +10,9 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.*;
 import lincks.maximilian.streaming.sink.Sink;
-import lincks.maximilian.streaming.source.IteratorSource;
 import lincks.maximilian.streaming.source.Source;
 import lincks.maximilian.streaming.source.Sources;
+import lincks.maximilian.streaming.source.SpliteratorSource;
 import lincks.maximilian.streaming.stage.Stage;
 
 public interface StreamInterop {
@@ -31,9 +31,7 @@ public interface StreamInterop {
 
   /** Converts this Source into a sequential ordered {@link Stream}. */
   static <T> Stream<T> toStream(Source<T> source) {
-    return StreamSupport.stream(
-        Spliterators.spliteratorUnknownSize(new IteratorSource<>(source), Spliterator.ORDERED),
-        false);
+    return StreamSupport.stream(new SpliteratorSource<>(source), false);
   }
 
   /**

@@ -3,7 +3,9 @@ package lincks.maximilian.streaming.source;
 import static lincks.maximilian.streaming.source.Sources.fromIterable;
 
 import java.util.*;
+import java.util.function.Consumer;
 import lincks.maximilian.streaming.sink.Sink;
+import lincks.maximilian.streaming.sink.Sinks;
 import lincks.maximilian.streaming.stage.Stage;
 import lincks.maximilian.util.Mutable;
 
@@ -11,7 +13,7 @@ import lincks.maximilian.util.Mutable;
  * Sources supply {@link Stage}s and {@link Sink}s with values. Sources are stateful and not
  * reusable. DO NOT USE A SOURCE AFTER CALLING ANY METHOD ON IT.
  */
-public interface Source<T> extends Iterable<T> {
+public interface Source<T> {
 
   /**
    * Fetches a new value from the upstream source or creates a new one.
@@ -65,12 +67,7 @@ public interface Source<T> extends Iterable<T> {
     return fromIterable(Arrays.asList(elements));
   }
 
-  /**
-   * Creates an {@link Iterator} from this Source. This DESTROYS this source. DO NOT USE IT
-   * AFTERWARD.
-   */
-  @Override
-  default Iterator<T> iterator() {
-    return new IteratorSource<>(this);
+  default void forEach(Consumer<T> action) {
+    Sinks.forEach(action).collect(this);
   }
 }
