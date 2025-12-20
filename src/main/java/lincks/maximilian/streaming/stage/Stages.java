@@ -123,27 +123,27 @@ public interface Stages {
 
   record State<A, R>(A acc, Optional<R> result, boolean exit) {
 
-    static <A, R> State<A, R> exitWith(Optional<R> result) {
+    public static <A, R> State<A, R> exitWith(Optional<R> result) {
       return new State<>(null, result, true);
     }
 
-    static <A, R> State<A, R> exitEmpty() {
+    public static <A, R> State<A, R> exitEmpty() {
       return new State<>(null, Optional.empty(), true);
     }
 
-    static <A, R> State<A, R> of(A acc, R result) {
+    public static <A, R> State<A, R> of(A acc, R result) {
       return new State<>(acc, Optional.of(result), false);
     }
 
-    static <A, R> State<A, R> of(A acc, Optional<R> result) {
+    public static <A, R> State<A, R> of(A acc, Optional<R> result) {
       return new State<>(acc, result, false);
     }
 
-    static <R> State<Void, R> of(Optional<R> result) {
+    public static <R> State<Void, R> of(Optional<R> result) {
       return new State<>(null, result, false);
     }
 
-    static <R> State<Void, R> of(R result) {
+    public static <R> State<Void, R> of(R result) {
       return new State<>(null, Optional.of(result), false);
     }
   }

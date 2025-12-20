@@ -4,7 +4,6 @@ public class Mutable<T> {
   private T val;
 
   public Mutable(T val) {
-    assert val != null;
     this.val = val;
   }
 

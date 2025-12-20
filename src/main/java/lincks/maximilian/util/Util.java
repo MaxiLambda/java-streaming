@@ -22,7 +22,15 @@ public interface Util {
     return t;
   }
 
-  static Supplier<Void> ignore()  {
+  static Supplier<Void> ignore() {
     return () -> null;
+  }
+
+  static <T, R> R cleanup(Supplier<R> f, Runnable clean) {
+    try {
+      return f.get();
+    } finally {
+      clean.run();
+    }
   }
 }

@@ -3,9 +3,10 @@ package lincks.maximilian.streaming.interop;
 import static java.util.stream.Collectors.toList;
 import static lincks.maximilian.streaming.source.Sources.fromIterable;
 import static lincks.maximilian.streaming.stage.Stages.buffer;
+import static lincks.maximilian.streaming.stage.Stages.integrate;
+import static lincks.maximilian.util.Util.cleanup;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.*;
@@ -14,6 +15,7 @@ import lincks.maximilian.streaming.source.Source;
 import lincks.maximilian.streaming.source.Sources;
 import lincks.maximilian.streaming.source.SpliteratorSource;
 import lincks.maximilian.streaming.stage.Stage;
+import lincks.maximilian.streaming.stage.Stages;
 
 public interface StreamInterop {
   static <T> Collector<T, ?, Source<T>> toSourceCollector() {
@@ -68,49 +70,23 @@ public interface StreamInterop {
     // array buffer to act as downstream
     ArrayList<R> listBuffer = new ArrayList<>();
 
-    Supplier<Optional<Source<R>>> createOptionalAndClearBuffer =
-        () -> {
-          try {
-            // we need to wrap the buffer in a new List to prevent issues on mutations
-            return Optional.of(fromIterable(new ArrayList<>(listBuffer)));
-          } finally {
-            listBuffer.clear();
-          }
-        };
+    Supplier<Optional<Source<R>>> listBufferToSource =
+        () -> Optional.of(fromIterable(new ArrayList<>(listBuffer)));
 
     Stage<T, Source<R>> intermediate =
-        (source -> {
-          // initialization must happen here to persist the state between pushes
-          // don't call get() if the initializer is the default value
-          A state = Gatherer.defaultInitializer().equals(initializer) ? null : initializer.get();
-          // this external counter is required, otherwise the finisher might be called an infinite
-          // number of times
-          AtomicBoolean finished = new AtomicBoolean(false);
-          return () -> {
-            // listBuffer only contains values if the finisher called downstream.push(...)
-            while (listBuffer.isEmpty()) {
-              Optional<T> token = source.pull();
-              if (token.isEmpty()) {
-                // check if a finisher exists
-                if (finished.get() || Gatherer.defaultFinisher().equals(finisher)) {
-                  // no finisher, nothing to push downstream
-                  return Optional.empty();
-                } else {
-                  finished.set(true);
-                  finisher.accept(state, listBuffer::add);
-                  // the finisher can call downstream.push(...), therefore check if new elements
-                  // exist
-
-                  return listBuffer.isEmpty()
-                      ? Optional.empty()
-                      : createOptionalAndClearBuffer.get();
-                }
-              }
-              integrator.integrate(state, token.get(), listBuffer::add);
-            }
-            return createOptionalAndClearBuffer.get();
-          };
-        });
+        integrate(
+            () -> Gatherer.defaultInitializer().equals(initializer) ? null : initializer.get(),
+            (val, acc) -> {
+              // acc may be mutated here
+              integrator.integrate(acc, val, listBuffer::add);
+              return Stages.State.of(acc, cleanup(listBufferToSource, listBuffer::clear));
+            },
+            acc -> {
+              finisher.accept(acc, listBuffer::add);
+              return listBuffer.isEmpty()
+                  ? Optional.empty()
+                  : cleanup(listBufferToSource, listBuffer::clear);
+            });
 
     return intermediate.then(buffer());
   }

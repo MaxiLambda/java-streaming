@@ -9,11 +9,13 @@ import static lincks.maximilian.streaming.stage.Stages.mapInner;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
+import java.util.stream.Gatherer;
 import java.util.stream.Gatherers;
 import java.util.stream.Stream;
 import lincks.maximilian.streaming.source.Source;
 import lincks.maximilian.streaming.stage.Stage;
 import lincks.maximilian.streaming.stage.Stages;
+import lincks.maximilian.util.Mutable;
 import org.junit.jupiter.api.Test;
 
 class StreamInteropTest {
@@ -74,6 +76,20 @@ class StreamInteropTest {
             .then(StreamInterop.fromGatherer(Gatherers.scan(() -> 0, Integer::sum)))
             .reduce(toList());
     assertEquals(List.of(1, 3, 6), res);
+  }
+
+  @Test
+  void fromGatherer4() {
+    var res =
+        Source.of(1, 2, 3)
+            .then(
+                StreamInterop.fromGatherer(
+                        Gatherer.<Integer, Mutable<Integer>>of(
+                            (_, val, downstream) -> downstream.push(new Mutable<>(val))))
+                    .then(map(Mutable<Integer>::get)))
+            .reduce(toList());
+
+    assertEquals(List.of(1, 2, 3), res);
   }
 
   @Test
