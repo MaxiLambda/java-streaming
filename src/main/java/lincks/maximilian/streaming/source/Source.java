@@ -3,10 +3,9 @@ package lincks.maximilian.streaming.source;
 import static lincks.maximilian.streaming.source.Sources.fromIterable;
 
 import java.util.*;
-import java.util.function.Consumer;
 import lincks.maximilian.streaming.sink.Sink;
-import lincks.maximilian.streaming.sink.Sinks;
 import lincks.maximilian.streaming.stage.Stage;
+import lincks.maximilian.util.Mutable;
 
 /**
  * Sources supply {@link Stage}s and {@link Sink}s with values. Sources are stateful and not
@@ -27,13 +26,18 @@ public interface Source<T> extends Iterable<T> {
    * @return a new Source consisting of this and other.
    */
   default Source<T> concat(Source<T> other) {
+    Mutable<Boolean> isEmpty = new Mutable<>(false);
+
     return () -> {
-      Optional<T> token = pull();
-      if (token.isEmpty()) {
-        return other.pull();
-      } else {
+      if (!isEmpty.get()) {
+        Optional<T> token = pull();
+        if (token.isEmpty()) {
+          isEmpty.set(true);
+          return other.pull();
+        }
         return token;
       }
+      return other.pull();
     };
   }
 

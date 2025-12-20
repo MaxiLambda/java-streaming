@@ -1,6 +1,10 @@
 package lincks.maximilian.streaming.source;
 
+import static lincks.maximilian.streaming.stage.Stages.buffer;
+
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 
 public interface Sources {
@@ -40,5 +44,10 @@ public interface Sources {
    */
   static <T> Source<T> source(Source<T> source) {
     return source;
+  }
+
+  @SafeVarargs
+  static <T> Source<T> concat(Source<T>... sources) {
+    return Sources.fromIterable(new ArrayList<>(List.of(sources))).then(buffer());
   }
 }
