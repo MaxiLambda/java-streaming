@@ -3,6 +3,7 @@ package lincks.maximilian.streaming.interop;
 import static lincks.maximilian.streaming.interop.StreamInterop.toStream;
 import static lincks.maximilian.streaming.interop.StreamInterop.toTerminalGatherer;
 import static lincks.maximilian.streaming.sink.Sinks.toList;
+import static lincks.maximilian.streaming.stage.StageChain.$;
 import static lincks.maximilian.streaming.stage.Stages.*;
 import static lincks.maximilian.streaming.stage.Stages.mapInner;
 import static org.junit.jupiter.api.Assertions.*;

@@ -3,10 +3,7 @@ package lincks.maximilian.streaming.sink;
 import static lincks.maximilian.util.Util.fluent;
 
 import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.*;
 
 public interface Sinks {
 
@@ -82,5 +79,18 @@ public interface Sinks {
     return (source) ->
         foldr(source::pull, (T val, Optional<T> acc) -> acc.map(a -> accumulator.apply(val, a)))
             .collect(source);
+  }
+
+  static <T> Sink<T, Void> forEach(Consumer<T> action) {
+    return (source) -> {
+      while (true) {
+        Optional<T> token = source.pull();
+        if (token.isEmpty()) {
+          return null;
+        } else {
+          action.accept(token.get());
+        }
+      }
+    };
   }
 }

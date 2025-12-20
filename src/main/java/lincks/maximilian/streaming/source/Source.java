@@ -1,13 +1,11 @@
 package lincks.maximilian.streaming.source;
 
 import static lincks.maximilian.streaming.source.Sources.fromIterable;
-import static lincks.maximilian.streaming.stage.Stages.$;
-import static lincks.maximilian.streaming.stage.Stages.buffer;
 
 import java.util.*;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
+import java.util.function.Consumer;
 import lincks.maximilian.streaming.sink.Sink;
+import lincks.maximilian.streaming.sink.Sinks;
 import lincks.maximilian.streaming.stage.Stage;
 
 /**

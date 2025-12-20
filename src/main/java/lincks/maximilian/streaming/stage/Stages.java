@@ -1,6 +1,7 @@
 package lincks.maximilian.streaming.stage;
 
 import static lincks.maximilian.streaming.source.Sources.fromIterable;
+import static lincks.maximilian.streaming.stage.StageChain.$;
 import static lincks.maximilian.util.Util.fluent;
 import static lincks.maximilian.util.Util.ignore;
 
@@ -16,6 +17,8 @@ public interface Stages {
   }
 
   static <T, R> Stage<T, R> map(Function<T, R> transformer) {
+    // sematically equivalent implementations, but the later is more efficient
+    // return integrate(ignore(), (val, _) -> State.of(transformer.apply(val)));
     return source -> () -> source.pull().map(transformer);
   }
 
@@ -24,50 +27,29 @@ public interface Stages {
   }
 
   static <T> Stage<T, T> filter(Predicate<T> predicate) {
-    return source ->
-        () -> {
-          Optional<T> val = source.pull();
-          // return empty if source is empty
-          while (val.isPresent()) {
-            if (predicate.test(val.get())) {
-              // only return val when it satisfies the predicate
-              return val;
-            }
-            val = source.pull();
-          }
-          return Optional.empty();
-        };
+    return integrate(
+        ignore(), (val, _) -> predicate.test(val) ? State.of(val) : State.of(Optional.empty()));
   }
 
   static <T, R> Stage<T, R> mapOptional(Function<T, Optional<R>> transformer) {
-    return map(transformer).then(filter(Optional::isPresent)).then(map(Optional::orElseThrow));
+    return $(map(transformer), filter(Optional::isPresent), map(Optional::orElseThrow));
+  }
+
+  static <T> Stage<T, T> dropWhile(Predicate<T> predicate) {
+    return integrate(
+        () -> false,
+        (val, take) ->
+            take || !predicate.test(val) ? State.of(true, val) : State.of(false, Optional.empty()));
   }
 
   static <T> Stage<T, T> takeWhile(Predicate<T> predicate) {
-    return source ->
-        () ->
-            // pulls a new value and checks if it matches the predicate
-            // if yes -> the value is returned
-            // if no  -> Optional.empty is returned, effectively signaling that no further
-            // processing is required
-            source.pull().flatMap(val -> predicate.test(val) ? Optional.of(val) : Optional.empty());
+    return integrate(
+        ignore(), (val, acc) -> predicate.test(val) ? State.of(val) : State.exitEmpty());
   }
 
   static <T> Stage<T, T> limit(int limit) {
-    return new Stage<>() {
-      private int counter = 0;
-
-      @Override
-      public Source<T> setup(Source<T> source) {
-        return () -> {
-          if (limit < ++counter) {
-            return Optional.empty();
-          } else {
-            return source.pull();
-          }
-        };
-      }
-    };
+    return integrate(
+        () -> 0, (val, passed) -> passed < limit ? State.of(passed + 1, val) : State.exitEmpty());
   }
 
   static <T> Stage<Source<T>, T> buffer() {
@@ -96,8 +78,8 @@ public interface Stages {
   }
 
   static <T, R> Stage<Source<T>, R> mapInner(Sink<T, R> sink) {
-    // equivalent implementations
-//     return integrate(ignore(), (val, _) -> State.of(val.reduce(sink)));
+    // sematically equivalent implementations, but the later is more efficient
+    // return integrate(ignore(), (val, _) -> State.of(val.reduce(sink)));
     return (source) -> () -> source.pull().map(s -> s.reduce(sink));
   }
 
@@ -110,8 +92,8 @@ public interface Stages {
         ArrayList<T>::new,
         (val, acc) -> {
           acc.add(val);
-          if (acc.size() < size) return new State<>(acc, Optional.empty());
-          return new State<>(new ArrayList<>(), Optional.of(fromIterable(acc)));
+          if (acc.size() < size) return State.of(acc, Optional.empty());
+          return State.of(new ArrayList<>(), fromIterable(acc));
         },
         acc -> acc.isEmpty() ? Optional.empty() : Optional.of(fromIterable(acc)));
   }
@@ -121,9 +103,9 @@ public interface Stages {
         ArrayList<T>::new,
         (val, acc) -> {
           acc.add(val);
-          if (acc.size() < size) return new State<>(acc, Optional.empty());
-          var ret = Optional.of(fromIterable(new ArrayList<>(acc)));
-          return new State<>(new ArrayList<>(), ret);
+          if (acc.size() < size) return State.of(acc, Optional.empty());
+          var ret = fromIterable(new ArrayList<>(acc));
+          return State.of(new ArrayList<>(), ret);
         });
   }
 
@@ -133,15 +115,36 @@ public interface Stages {
         ArrayDeque<T>::new,
         (val, acc) -> {
           acc.addLast(val);
-          if (acc.size() < size) return new State<>(acc, Optional.empty());
-          var ret = Optional.of(fromIterable(new ArrayList<>(acc)));
-          return new State<>(fluent(acc, ArrayDeque::removeFirst), ret);
+          if (acc.size() < size) return State.of(acc, Optional.empty());
+          var ret = fromIterable(new ArrayList<>(acc));
+          return State.of(fluent(acc, ArrayDeque::removeFirst), ret);
         });
   }
 
-  record State<A, R>(A acc, Optional<R> result) {
+  record State<A, R>(A acc, Optional<R> result, boolean exit) {
+
+    static <A, R> State<A, R> exitWith(Optional<R> result) {
+      return new State<>(null, result, true);
+    }
+
+    static <A, R> State<A, R> exitEmpty() {
+      return new State<>(null, Optional.empty(), true);
+    }
+
+    static <A, R> State<A, R> of(A acc, R result) {
+      return new State<>(acc, Optional.of(result), false);
+    }
+
+    static <A, R> State<A, R> of(A acc, Optional<R> result) {
+      return new State<>(acc, result, false);
+    }
+
+    static <R> State<Void, R> of(Optional<R> result) {
+      return new State<>(null, result, false);
+    }
+
     static <R> State<Void, R> of(R result) {
-      return new State<>(null, Optional.of(result));
+      return new State<>(null, Optional.of(result), false);
     }
   }
 
@@ -160,11 +163,13 @@ public interface Stages {
       BiFunction<T, A, State<A, R>> accumulator,
       Function<A, Optional<R>> finisher) {
     // Mutable's are required because references are not allowed to change inside lambdas
-    Mutable<State<A, R>> state = new Mutable<>(new State<>(initializer.get(), Optional.empty()));
+    Mutable<State<A, R>> state = new Mutable<>(State.of(initializer.get(), Optional.empty()));
     Mutable<Boolean> finisherRan = new Mutable<>(false);
     return source ->
         // pull method of the returned source
         () -> {
+          // if state.exit is true, this stage will pass no further values downstream
+          if (state.get().exit) return state.get().result;
           // when downstream pulls, it might be necessary to pull multiple times upstream to create
           // a new value to push down.
           // state is persisted in a State holding an accumulator A and a result
@@ -184,80 +189,14 @@ public interface Stages {
             }
             // run the accumulator and update the current state
             state.set(accumulator.apply(token.get(), state.get().acc));
+            // if state.exit is true, this stage will pass no further values downstream
+            if (state.get().exit) return state.get().result;
           }
           // save the result before cleaning the State
           var res = state.get().result;
           // clean up the result to prevent loops
-          state.set(new State<>(state.get().acc, Optional.empty()));
+          state.set(State.of(state.get().acc, Optional.empty()));
           return res;
         };
-  }
-
-  // can be used to cast lambdas
-  static <T, R> Stage<T, R> $(Stage<T, R> first) {
-    return first;
-  }
-
-  static <T, A, R> Stage<T, R> $(Stage<T, A> first, Stage<A, R> second) {
-    return first.then(second);
-  }
-
-  static <T, T2, T3, R> Stage<T, R> $(
-      Stage<T, T2> first, Stage<T2, T3> second, Stage<T3, R> third) {
-    return first.then(second).then(third);
-  }
-
-  static <T, T2, T3, T4, R> Stage<T, R> $(
-      Stage<T, T2> first, Stage<T2, T3> second, Stage<T3, T4> third, Stage<T4, R> fourth) {
-    return first.then(second).then(third).then(fourth);
-  }
-
-  static <T, T2, T3, T4, T5, R> Stage<T, R> $(
-      Stage<T, T2> first,
-      Stage<T2, T3> second,
-      Stage<T3, T4> third,
-      Stage<T4, T5> fourth,
-      Stage<T5, R> fifth) {
-    return first.then(second).then(third).then(fourth).then(fifth);
-  }
-
-  static <T, T2, T3, T4, T5, T6, R> Stage<T, R> $(
-      Stage<T, T2> first,
-      Stage<T2, T3> second,
-      Stage<T3, T4> third,
-      Stage<T4, T5> fourth,
-      Stage<T5, T6> fifth,
-      Stage<T6, R> sixth) {
-    return first.then(second).then(third).then(fourth).then(fifth).then(sixth);
-  }
-
-  static <T, T2, T3, T4, T5, T6, T7, R> Stage<T, R> $(
-      Stage<T, T2> first,
-      Stage<T2, T3> second,
-      Stage<T3, T4> third,
-      Stage<T4, T5> fourth,
-      Stage<T5, T6> fifth,
-      Stage<T6, T7> sixth,
-      Stage<T7, R> seventh) {
-    return first.then(second).then(third).then(fourth).then(fifth).then(sixth).then(seventh);
-  }
-
-  static <T, T2, T3, T4, T5, T6, T7, T8, R> Stage<T, R> $(
-      Stage<T, T2> first,
-      Stage<T2, T3> second,
-      Stage<T3, T4> third,
-      Stage<T4, T5> fourth,
-      Stage<T5, T6> fifth,
-      Stage<T6, T7> sixth,
-      Stage<T7, T8> seventh,
-      Stage<T8, R> eighth) {
-    return first
-        .then(second)
-        .then(third)
-        .then(fourth)
-        .then(fifth)
-        .then(sixth)
-        .then(seventh)
-        .then(eighth);
   }
 }
