@@ -121,6 +121,46 @@ public interface Stages {
         });
   }
 
+  static <T> Stage<T, T> distinct() {
+    return integrate(
+        HashSet<T>::new,
+        (val, acc) -> {
+          if (acc.contains(val)) {
+            return State.of(acc, Optional.empty());
+          }
+          acc.add(val);
+          return State.of(acc, val);
+        });
+  }
+
+  static <T, C> Stage<T, T> distinctBy(Function<T, C> transformer) {
+    return integrate(
+        HashSet<C>::new,
+        (val, acc) -> {
+          var transformed = transformer.apply(val);
+          if (acc.contains(transformed)) {
+            return State.of(acc, Optional.empty());
+          }
+          acc.add(transformed);
+          return State.of(acc, val);
+        });
+  }
+
+  static <T extends Comparable<T>> Stage<T, T> sort() {
+    return sortBy(Comparable::compareTo);
+  }
+
+  static <T> Stage<T, T> sortBy(Comparator<T> order) {
+    return integrate(
+            () -> new TreeSet<>(order),
+            (T val, TreeSet<T> acc) -> {
+              acc.add(val);
+              return State.of(acc, Optional.empty());
+            },
+            acc -> Optional.of(fromIterable(acc)))
+        .then(buffer());
+  }
+
   record State<A, R>(A acc, Optional<R> result, boolean exit) {
 
     public static <A, R> State<A, R> exitWith(Optional<R> result) {
