@@ -26,7 +26,7 @@ public interface Util {
     return () -> null;
   }
 
-  static <T, R> R cleanup(Supplier<R> f, Runnable clean) {
+  static <R> R cleanup(Supplier<R> f, Runnable clean) {
     try {
       return f.get();
     } finally {

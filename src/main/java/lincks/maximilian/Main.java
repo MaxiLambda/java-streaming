@@ -13,7 +13,7 @@ import lincks.maximilian.streaming.source.never.Never;
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
-  public static void main(String[] args) {
+  public static void main() {
 
     BiFunction<String, Character, String> concatFlipped = (String str, Character chr) -> chr + str;
     BiFunction<Character, String, String> concat = (Character chr, String str) -> chr + str;
