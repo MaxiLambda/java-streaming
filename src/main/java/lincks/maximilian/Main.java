@@ -44,6 +44,6 @@ public class Main {
 
     System.out.println(voidExperiments);
 
-    Source.of(1, 2, 3, 4).then(limit(2)).forEach(System.out::println);
+    Source.of(1, 2, 3, 4).then(take(2)).forEach(System.out::println);
   }
 }

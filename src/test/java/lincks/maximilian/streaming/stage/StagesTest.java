@@ -39,14 +39,14 @@ class StagesTest {
   }
 
   @Test
-  void limit() {
-    var res = Source.of(1, 2, 3).then(Stages.limit(2)).reduce(toList());
+  void take() {
+    var res = Source.of(1, 2, 3).then(Stages.take(2)).reduce(toList());
     assertEquals(List.of(1, 2), res);
   }
 
   @Test
-  void limitToBig() {
-    var res = Source.of(1, 2, 3).then(Stages.limit(7)).reduce(toList());
+  void takeToBig() {
+    var res = Source.of(1, 2, 3).then(Stages.take(7)).reduce(toList());
     assertEquals(List.of(1, 2, 3), res);
   }
 

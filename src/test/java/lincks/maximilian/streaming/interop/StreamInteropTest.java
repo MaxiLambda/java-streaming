@@ -35,7 +35,7 @@ class StreamInteropTest {
 
   @Test
   void toGatherer2() {
-    var res = Stream.of(1, 2, 3).gather(toTerminalGatherer(limit(1))).toList();
+    var res = Stream.of(1, 2, 3).gather(toTerminalGatherer(take(1))).toList();
 
     assertEquals(List.of(1), res);
   }

@@ -47,9 +47,13 @@ public interface Stages {
         ignore(), (val, acc) -> predicate.test(val) ? State.of(val) : State.exitEmpty());
   }
 
-  static <T> Stage<T, T> limit(int limit) {
+  static <T> Stage<T, T> take(int limit) {
     return integrate(
         () -> 0, (val, passed) -> passed < limit ? State.of(passed + 1, val) : State.exitEmpty());
+  }
+
+  static <T> Stage<T,T> drop(int num) {
+      return integrate(() -> 0, (val, dropped) -> dropped < num ? State.of(dropped + 1, Optional.empty()) : State.of(dropped, val));
   }
 
   static <T> Stage<Source<T>, T> buffer() {
