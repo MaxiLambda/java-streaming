@@ -6,6 +6,7 @@ import static lincks.maximilian.streaming.stage.Stages.buffer;
 import lincks.maximilian.streaming.source.Source;
 import lincks.maximilian.streaming.stage.Stage;
 
+/** Void like interface but creating non-null values is possible. */
 public sealed interface Never permits NeverImpl {
 
   static <T> Stage<Never, T> asNeverStage(Source<T> source) {
@@ -15,6 +16,10 @@ public sealed interface Never permits NeverImpl {
 
   static <T> Source<T> fromNever(Stage<Never, T> stage) {
     // we need one value to make the never source pullable
-    return Source.<Never>of(new NeverImpl()).then(stage);
+    return Source.of(never()).then(stage);
+  }
+
+  static Never never() {
+    return new NeverImpl();
   }
 }

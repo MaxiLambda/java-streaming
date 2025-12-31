@@ -33,4 +33,13 @@ public interface Util {
       clean.run();
     }
   }
+
+  static <R> R cleanup(Supplier<R> f, Consumer<R> clean) {
+    R val = f.get();
+    try {
+      return val;
+    } finally {
+      clean.accept(val);
+    }
+  }
 }

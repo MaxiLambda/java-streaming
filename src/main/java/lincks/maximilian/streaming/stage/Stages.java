@@ -2,8 +2,7 @@ package lincks.maximilian.streaming.stage;
 
 import static lincks.maximilian.streaming.source.Sources.fromIterable;
 import static lincks.maximilian.streaming.stage.StageChain.$;
-import static lincks.maximilian.util.Util.fluent;
-import static lincks.maximilian.util.Util.ignore;
+import static lincks.maximilian.util.Util.*;
 
 import java.util.*;
 import java.util.function.*;
@@ -52,8 +51,11 @@ public interface Stages {
         () -> 0, (val, passed) -> passed < limit ? State.of(passed + 1, val) : State.exitEmpty());
   }
 
-  static <T> Stage<T,T> drop(int num) {
-      return integrate(() -> 0, (val, dropped) -> dropped < num ? State.of(dropped + 1, Optional.empty()) : State.of(dropped, val));
+  static <T> Stage<T, T> drop(int num) {
+    return integrate(
+        () -> 0,
+        (val, dropped) ->
+            dropped < num ? State.of(dropped + 1, Optional.empty()) : State.of(dropped, val));
   }
 
   static <T> Stage<Source<T>, T> buffer() {
@@ -85,6 +87,31 @@ public interface Stages {
     // sematically equivalent implementations, but the later is more efficient
     // return integrate(ignore(), (val, _) -> State.of(val.reduce(sink)));
     return (source) -> () -> source.pull().map(s -> s.reduce(sink));
+  }
+
+  static <T> Stage<T, Source<T>> groupingBy(BiFunction<T, T, Boolean> groupingBy) {
+    return Stages.integrate(
+        ArrayList<T>::new,
+        (val, acc) -> {
+          // if acc is empty, create a new group
+          if (acc.isEmpty()) {
+            acc.add(val);
+            return State.of(acc, Optional.empty());
+          }
+          // val matches the last value in the group, based on groupingBy
+          if (groupingBy.apply(acc.getLast(), val)) {
+            acc.add(val);
+            return State.of(acc, Optional.empty());
+          }
+          // if val does not match the group, the previous group is finished and val is the first
+          // element of a new group
+          var res = fromIterable(new ArrayList<>(acc));
+          acc.clear();
+          acc.add(val);
+          return State.of(acc, res);
+        },
+        // returns the last group, acc is only empty if the original source was empty^
+        acc -> acc.isEmpty() ? Optional.empty() : Optional.of(fromIterable(acc)));
   }
 
   /**

@@ -1,5 +1,7 @@
 package lincks.maximilian.util;
 
+import java.util.function.UnaryOperator;
+
 public class Mutable<T> {
   private T val;
 
@@ -13,5 +15,9 @@ public class Mutable<T> {
 
   public void set(T val) {
     this.val = val;
+  }
+
+  public void mutateWith(UnaryOperator<T> mutator) {
+    this.val = mutator.apply(val);
   }
 }
