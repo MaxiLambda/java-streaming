@@ -147,7 +147,8 @@ public interface Stages {
   }
 
   static <T, R> Stage<T, R> scanl(BiFunction<R, T, R> f, Supplier<R> init) {
-    return Stages.integrate(init, (val, acc) -> State.of(f.apply(acc, val), acc), Optional::of);
+    return Stages.
+            integrate(init, (val, acc) -> State.of(f.apply(acc, val), acc), Optional::of);
   }
 
   static <T> Stage<T, T> scanl(BiFunction<T, T, T> f) {
