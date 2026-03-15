@@ -1,12 +1,7 @@
 package lincks.maximilian.streaming.stage;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Gatherer;
-import java.util.stream.Gatherers;
 import lincks.maximilian.streaming.sink.Sink;
 import lincks.maximilian.streaming.source.Source;
-import lincks.maximilian.streaming.source.Sources;
 
 public interface Stage<T, R> {
 

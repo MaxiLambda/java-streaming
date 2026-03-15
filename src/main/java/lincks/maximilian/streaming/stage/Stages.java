@@ -30,6 +30,12 @@ public interface Stages {
         ignore(), (val, _) -> predicate.test(val) ? State.of(val) : State.of(Optional.empty()));
   }
 
+  static <T, R> Stage<T, T> filterMap(Predicate<R> predicate, Function<T, R> mapper) {
+    return integrate(
+        ignore(),
+        (val, _) -> predicate.test(mapper.apply(val)) ? State.of(val) : State.of(Optional.empty()));
+  }
+
   static <T, R> Stage<T, R> mapOptional(Function<T, Optional<R>> transformer) {
     return $(map(transformer), filter(Optional::isPresent), map(Optional::orElseThrow));
   }
@@ -137,6 +143,22 @@ public interface Stages {
           if (acc.size() < size) return State.of(acc, Optional.empty());
           var ret = fromIterable(new ArrayList<>(acc));
           return State.of(new ArrayList<>(), ret);
+        });
+  }
+
+  static <T, R> Stage<T, R> scanl(BiFunction<R, T, R> f, Supplier<R> init) {
+    return Stages.integrate(init, (val, acc) -> State.of(f.apply(acc, val), acc), Optional::of);
+  }
+
+  static <T> Stage<T, T> scanl(BiFunction<T, T, T> f) {
+    return integrate(
+        () -> (T) null,
+        (val, acc) -> {
+          if (acc == null) {
+            return State.of(val, val);
+          }
+          var res = f.apply(acc, val);
+          return State.of(res, res);
         });
   }
 

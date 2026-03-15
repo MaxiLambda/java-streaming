@@ -6,6 +6,7 @@ import static lincks.maximilian.streaming.stage.Stages.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
+import java.util.Optional;
 import lincks.maximilian.streaming.source.Source;
 import org.junit.jupiter.api.Test;
 
@@ -82,7 +83,7 @@ class StagesTest {
   void dropNone() {
     var res = Source.of(1, 2, 3).then(Stages.dropWhile(i -> i < 0)).reduce(toList());
 
-    assertEquals(List.of(), res);
+    assertEquals(List.of(1, 2, 3), res);
   }
 
   @Test
@@ -90,5 +91,41 @@ class StagesTest {
     var res = Source.of(1, 2, 3).then(Stages.dropWhile(i -> i > 0)).reduce(toList());
 
     assertEquals(List.of(), res);
+  }
+
+  @Test
+  void flatMap() {
+    var res = Source.of(1, 2, 3).then(Stages.flatMap(i -> Source.of(i, i + 1))).reduce(toList());
+    assertEquals(List.of(1, 2, 2, 3, 3, 4), res);
+  }
+
+  @Test
+  void mapOptional() {
+    var res =
+        Source.of(1, 20, 3)
+            .then(Stages.mapOptional(i -> i % 2 == 0 ? Optional.of("!") : Optional.empty()))
+            .reduce(toList());
+    assertEquals(List.of("!"), res);
+  }
+
+  @Test
+  void filterMap() {
+    var res =
+        Source.of(100, 2000, 30)
+            .then(Stages.filterMap(s -> s.length() > 2, String::valueOf))
+            .reduce(toList());
+    assertEquals(List.of(100, 2000), res);
+  }
+
+  @Test
+  void scanl() {
+    var res = Source.of(1, 2, 3).then(Stages.scanl((s, i) -> s + i, () -> "")).reduce(toList());
+    assertEquals(List.of("", "1", "12", "123"), res);
+  }
+
+  @Test
+  void scanl2() {
+    var res = Source.of(1, 2, 3).then(Stages.scanl(Integer::sum)).reduce(toList());
+    assertEquals(List.of(1, 3, 6), res);
   }
 }
