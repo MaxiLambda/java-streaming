@@ -2,8 +2,19 @@ package lincks.maximilian.streaming.sink;
 
 import static lincks.maximilian.util.Util.fluent;
 
-import java.util.*;
-import java.util.function.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import lincks.maximilian.streaming.source.Source;
 
 public interface Sinks {
 
@@ -92,5 +103,25 @@ public interface Sinks {
         }
       }
     };
+  }
+
+  static <T> Sink<T, Optional<T>> first() {
+    return Source::pull;
+  }
+
+  static <T extends Comparable<T>> Sink<T, Optional<T>> min() {
+    return foldl(BinaryOperator.minBy(T::compareTo));
+  }
+
+  static <T> Sink<T, Optional<T>> minBy(Comparator<T> comparator) {
+    return foldl(BinaryOperator.minBy(comparator));
+  }
+
+  static <T extends Comparable<T>> Sink<T, Optional<T>> max() {
+    return foldl(BinaryOperator.maxBy(T::compareTo));
+  }
+
+  static <T> Sink<T, Optional<T>> maxBy(Comparator<T> comparator) {
+    return foldl(BinaryOperator.maxBy(comparator));
   }
 }
