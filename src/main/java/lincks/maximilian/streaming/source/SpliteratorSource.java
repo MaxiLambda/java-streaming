@@ -1,6 +1,7 @@
 package lincks.maximilian.streaming.source;
 
 import java.util.Spliterator;
+import java.util.function.Consumer;
 
 public class SpliteratorSource<T> implements Spliterator<T> {
 
@@ -11,11 +12,15 @@ public class SpliteratorSource<T> implements Spliterator<T> {
   }
 
   @Override
-  public boolean tryAdvance(java.util.function.Consumer<? super T> action) {
-    return source.pull().map(e -> {
-      action.accept(e);
-      return true;
-    }).orElse(false);
+  public boolean tryAdvance(Consumer<? super T> action) {
+    return source
+        .pull()
+        .map(
+            e -> {
+              action.accept(e);
+              return true;
+            })
+        .orElse(false);
   }
 
   @Override
@@ -30,7 +35,6 @@ public class SpliteratorSource<T> implements Spliterator<T> {
 
   @Override
   public int characteristics() {
-    return NONNULL | ORDERED;
+    return ORDERED;
   }
-
 }
